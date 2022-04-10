@@ -7,7 +7,7 @@ go get -u github.com/markus-wa/demoinfocs-golang/v2/pkg/demoinfocs
 ```
 #使用方法
 ```bash
-go run main.go -file xxxx.dem
+go run main.go --file xxxx.dem
 ```
 文件会输出到output文件夹下
 #注意事项
