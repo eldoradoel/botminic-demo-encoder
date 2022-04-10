@@ -1,1 +1,12 @@
-# botminic-demo-encoder
+# botmimic-demo-encoder
+将demo文件解析为波特botmimic所需要的的文件格式
+```bash
+# 安装依赖
+go get -u github.com/markus-wa/demoinfocs-golang/v2/pkg/demoinfocs
+```
+#使用方法
+```bash
+go run main.go -file xxxx.dem
+```
+#注意事项
+目前只是初步的实现解析功能，相关配套插件还没有实现
