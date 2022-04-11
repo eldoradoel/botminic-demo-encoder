@@ -37,14 +37,14 @@ func Start(filePath string) {
 			ctPlayers := gs.TeamCounterTerrorists().Members()
 			Players := append(tPlayers, ctPlayers...)
 			for _, player := range Players {
-				if player != nil && player.IsConnected && player.IsAlive() {
+				if player != nil && player.IsAlive() {
 					var addonButton int32 = 0
 					key := TickPlayer{currentTick, player.SteamID64}
 					if val, ok := buttonTickMap[key]; ok {
 						addonButton = val
 						delete(buttonTickMap, key)
 					}
-					parsePlayerFrame(player, addonButton, iParser.TickRate(), true)
+					parsePlayerFrame(player, addonButton, iParser.TickRate(), false)
 				}
 			}
 		}
@@ -106,7 +106,6 @@ func Start(filePath string) {
 			Players := append(tPlayers, ctPlayers...)
 			for _, player := range Players {
 				if player != nil {
-
 					saveToRecFile(player, int32(roundNum))
 				}
 			}

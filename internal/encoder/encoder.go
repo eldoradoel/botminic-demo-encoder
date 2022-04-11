@@ -77,6 +77,7 @@ func WriteToRecFile(playerName string, playerSteamId64 uint64, roundNum int32, s
 
 	// step.8 tick count
 	var tickCount int32 = int32(len(PlayerFramesMap[playerSteamId64]))
+
 	WriteToBuf(playerSteamId64, tickCount)
 
 	// step.9 bookmark count
