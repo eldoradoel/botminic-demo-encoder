@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"math"
 	"os"
 
 	ilog "botminic-demo-encoder/internal/logger"
@@ -15,7 +16,6 @@ type TickPlayer struct {
 
 func Start(filePath string) {
 
-	var validRound = getValidRoundNum(filePath)
 	iFile, err := os.Open(filePath)
 	checkError(err)
 
@@ -27,6 +27,12 @@ func Start(filePath string) {
 	var roundstart bool = false
 	var matchstart bool = false
 	var roundNum int = 0
+	var realTick int = 0
+	iParserHeader, err := iParser.ParseHeader()
+	if err == nil {
+		ilog.InfoLogger.Printf("demo实际Tick为：%d", int(math.Floor(iParserHeader.FrameRate()+0.5)))
+		realTick = int(math.Floor(iParserHeader.FrameRate() + 0.5))
+	}
 
 	iParser.RegisterEventHandler(func(e events.FrameDone) {
 		gs := iParser.GameState()
@@ -44,7 +50,11 @@ func Start(filePath string) {
 						addonButton = val
 						delete(buttonTickMap, key)
 					}
-					parsePlayerFrame(player, addonButton, iParser.TickRate(), false)
+					if realTick == 64 {
+						parsePlayerFrame(player, addonButton, float64(realTick), false)
+					} else if realTick == 128 {
+						parsePlayerFrame(player, addonButton, float64(realTick), false)
+					}
 				}
 			}
 		}
@@ -68,7 +78,7 @@ func Start(filePath string) {
 			for _, player := range Players {
 				if player != nil {
 					// save to rec file
-					saveToRecFile(player, int32(roundNum))
+					saveToRecFile(player, int32(roundNum), realTick)
 				}
 			}
 			ilog.InfoLogger.Println("比赛结束")
@@ -76,7 +86,7 @@ func Start(filePath string) {
 	})
 
 	iParser.RegisterEventHandler(func(e events.RoundStart) {
-		if matchstart && roundNum < validRound {
+		if matchstart {
 			roundstart = true
 			roundNum++
 			ilog.InfoLogger.Printf("回合开始: %d tick: %d", roundNum, iParser.GameState().IngameTick())
@@ -96,7 +106,7 @@ func Start(filePath string) {
 	})
 
 	iParser.RegisterEventHandler(func(e events.RoundEnd) {
-		if matchstart && roundNum < validRound {
+		if matchstart {
 			roundstart = false
 			ilog.InfoLogger.Printf("回合结束: %d tick: %d", roundNum, iParser.GameState().IngameTick())
 			// 结束录像文件
@@ -106,8 +116,11 @@ func Start(filePath string) {
 			Players := append(tPlayers, ctPlayers...)
 			for _, player := range Players {
 				if player != nil {
-					saveToRecFile(player, int32(roundNum))
+					saveToRecFile(player, int32(roundNum), realTick)
 				}
+			}
+			if roundNum == 1 {
+				iParser.Cancel()
 			}
 		}
 	})

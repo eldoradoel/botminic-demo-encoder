@@ -3,11 +3,8 @@ package parser
 import (
 	encoder "botminic-demo-encoder/internal/encoder"
 	ilog "botminic-demo-encoder/internal/logger"
-	dem "github.com/markus-wa/demoinfocs-golang/v2/pkg/demoinfocs"
 	common "github.com/markus-wa/demoinfocs-golang/v2/pkg/demoinfocs/common"
-	"github.com/markus-wa/demoinfocs-golang/v2/pkg/demoinfocs/events"
 	"math"
-	"os"
 )
 
 const Pi = 3.14159265358979323846
@@ -150,38 +147,21 @@ func parsePlayerFrame(player *common.Player, addonButton int32, tickrate float64
 		}
 
 	}
-
 	encoder.PlayerFramesMap[player.SteamID64] = append(encoder.PlayerFramesMap[player.SteamID64], *iFrameInfo)
 }
 
-func saveToRecFile(player *common.Player, roundNum int32) {
-	if player.Team == common.TeamTerrorists {
-		encoder.WriteToRecFile(player.Name, player.SteamID64, roundNum, "t")
-	} else {
-		encoder.WriteToRecFile(player.Name, player.SteamID64, roundNum, "ct")
-	}
-}
-
-func getValidRoundNum(filePath string) int {
-	ilog.InfoLogger.Println("开始解析有效回合数")
-	iFile, err := os.Open(filePath)
-	checkError(err)
-
-	var validRound int = 0
-	var matchstart bool = false
-
-	iParser := dem.NewParser(iFile)
-	iParser.RegisterEventHandler(func(e events.MatchStartedChanged) {
-		if e.NewIsStarted && !matchstart {
-			matchstart = true
+func saveToRecFile(player *common.Player, roundNum int32, realTick int) {
+	if realTick == 64 {
+		if player.Team == common.TeamTerrorists {
+			encoder.WriteToRecFileIn64Tick(player.Name, player.SteamID64, roundNum, "t")
+		} else {
+			encoder.WriteToRecFileIn64Tick(player.Name, player.SteamID64, roundNum, "ct")
 		}
-	})
-	iParser.RegisterEventHandler(func(e events.RoundEndOfficial) {
-		validRound++
-	})
-	err = iParser.ParseToEnd()
-	checkError(err)
-	iParser.Close()
-	ilog.InfoLogger.Println("有效回合数为 %d", validRound)
-	return validRound
+	} else if realTick == 128 {
+		if player.Team == common.TeamTerrorists {
+			encoder.WriteToRecFileIn128Tick(player.Name, player.SteamID64, roundNum, "t")
+		} else {
+			encoder.WriteToRecFileIn128Tick(player.Name, player.SteamID64, roundNum, "ct")
+		}
+	}
 }
