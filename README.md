@@ -10,5 +10,7 @@ go get -u github.com/markus-wa/demoinfocs-golang/v2/pkg/demoinfocs
 go run main.go --file xxxx.dem
 ```
 文件会输出到output文件夹下
+#服务器配置
+后期将会使用tickrate control按demo的tickrate来控制回放服务器的tickrate
 #注意事项
 目前只是初步的实现解析功能，相关配套插件还没有实现
