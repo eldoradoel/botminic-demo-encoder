@@ -1,16 +1,16 @@
 package parser
 
 import (
-	encoder "botminic-demo-encoder/internal/encoder"
+	"botminic-demo-encoder/internal/encoder"
 	ilog "botminic-demo-encoder/internal/logger"
-	common "github.com/markus-wa/demoinfocs-golang/v2/pkg/demoinfocs/common"
+	"github.com/markus-wa/demoinfocs-golang/v2/pkg/demoinfocs/common"
 	"math"
 )
 
 const Pi = 3.14159265358979323846
 
-var bufWeaponMap map[uint64]int32 = make(map[uint64]int32)
-var playerLastZ map[uint64]float32 = make(map[uint64]float32)
+var bufWeaponMap = make(map[uint64]int32)
+var playerLastZ = make(map[uint64]float32)
 
 // Function to handle errors
 func checkError(err error) {
@@ -118,7 +118,7 @@ func parsePlayerFrame(player *common.Player, addonButton int32, tickrate float64
 			iFrameInfo.ActualVelocity[1] == 0.0 &&
 			encoder.PlayerFramesMap[player.SteamID64][lastIdx].ActualVelocity[0] == 0.0 &&
 			encoder.PlayerFramesMap[player.SteamID64][lastIdx].ActualVelocity[1] == 0.0) {
-			var velAngle float64 = 0.0
+			var velAngle = 0.0
 			if iFrameInfo.ActualVelocity[0] == 0.0 {
 				if iFrameInfo.ActualVelocity[1] < 0.0 {
 					velAngle = 270.0
@@ -151,17 +151,22 @@ func parsePlayerFrame(player *common.Player, addonButton int32, tickrate float64
 }
 
 func saveToRecFile(player *common.Player, roundNum int32, realTick int) {
-	if realTick == 64 {
-		if player.Team == common.TeamTerrorists {
-			encoder.WriteToRecFileIn64Tick(player.Name, player.SteamID64, roundNum, "t")
-		} else {
-			encoder.WriteToRecFileIn64Tick(player.Name, player.SteamID64, roundNum, "ct")
-		}
-	} else if realTick == 128 {
-		if player.Team == common.TeamTerrorists {
-			encoder.WriteToRecFileIn128Tick(player.Name, player.SteamID64, roundNum, "t")
-		} else {
-			encoder.WriteToRecFileIn128Tick(player.Name, player.SteamID64, roundNum, "ct")
-		}
+	//if realTick == 64 {
+	//	if player.Team == common.TeamTerrorists {
+	//		encoder.WriteToRecFileIn64Tick(player.Name, player.SteamID64, roundNum, "t")
+	//	} else {
+	//		encoder.WriteToRecFileIn64Tick(player.Name, player.SteamID64, roundNum, "ct")
+	//	}
+	//} else if realTick == 128 {
+	//	if player.Team == common.TeamTerrorists {
+	//		encoder.WriteToRecFileIn128Tick(player.Name, player.SteamID64, roundNum, "t")
+	//	} else {
+	//		encoder.WriteToRecFileIn128Tick(player.Name, player.SteamID64, roundNum, "ct")
+	//	}
+	//}
+	if player.Team == common.TeamTerrorists {
+		encoder.WriteToRecFileIn128Tick(player.Name, player.SteamID64, roundNum, "t")
+	} else {
+		encoder.WriteToRecFileIn128Tick(player.Name, player.SteamID64, roundNum, "ct")
 	}
 }
