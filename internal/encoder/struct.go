@@ -18,7 +18,10 @@ type FrameInfo struct {
 	PlayerSubtype     int32
 	PlayerSeed        int32
 	AdditionalFields  int32
-	// 附加信息
+
+	EntityFlay int32
+	MoveType   int32 // 附加信息
+
 	AtOrigin   [3]float32
 	AtAngles   [3]float32
 	AtVelocity [3]float32

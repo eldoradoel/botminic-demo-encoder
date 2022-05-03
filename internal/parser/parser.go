@@ -119,9 +119,6 @@ func Start(filePath string) {
 					saveToRecFile(player, int32(roundNum), realTick)
 				}
 			}
-			if roundNum == 1 {
-				iParser.Cancel()
-			}
 		}
 	})
 

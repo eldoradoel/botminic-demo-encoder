@@ -51,15 +51,15 @@ func InitPlayer(initFrame FrameInitInfo) {
 	WriteToBuf(initFrame.PlayerSteamId64, []byte(initFrame.PlayerName))
 
 	// step.6 initial position
-	for idx := 0; idx < 3; idx++ {
-		WriteToBuf(initFrame.PlayerSteamId64, float32(initFrame.Position[idx]))
-	}
+	//for idx := 0; idx < 3; idx++ {
+	//	WriteToBuf(initFrame.PlayerSteamId64, float32(initFrame.Position[idx]))
+	//}
 
 	// step.7 initial angle
-	for idx := 0; idx < 2; idx++ {
-		WriteToBuf(initFrame.PlayerSteamId64, initFrame.Angles[idx])
-	}
-	//ilog.InfoLogger.Println("初始化成功: ", initFrame.PlayerName)
+	//for idx := 0; idx < 2; idx++ {
+	//	WriteToBuf(initFrame.PlayerSteamId64, initFrame.Angles[idx])
+	//}
+	ilog.InfoLogger.Println("初始化成功: ", initFrame.PlayerName)
 }
 
 func WriteToRecFileTick(playerName string, playerSteamId64 uint64, roundNum int32, subdir string) {
@@ -81,44 +81,47 @@ func WriteToRecFileTick(playerName string, playerSteamId64 uint64, roundNum int3
 	WriteToBuf(playerSteamId64, tickCount)
 
 	// step.9 bookmark count
-	WriteToBuf(playerSteamId64, int32(0))
+	//WriteToBuf(playerSteamId64, int32(0))
 
 	// step.10 all bookmark
 	// ignore
 
 	// step.11 all tick frame
 	for _, frame := range PlayerFramesMap[playerSteamId64] {
-		WriteToBuf(playerSteamId64, frame.PlayerButtons)
-		WriteToBuf(playerSteamId64, frame.PlayerImpulse)
+		//WriteToBuf(playerSteamId64, frame.PlayerButtons)
+		//WriteToBuf(playerSteamId64, frame.PlayerImpulse)
 		for idx := 0; idx < 3; idx++ {
 			WriteToBuf(playerSteamId64, frame.ActualVelocity[idx])
 		}
-		for idx := 0; idx < 3; idx++ {
-			WriteToBuf(playerSteamId64, frame.PredictedVelocity[idx])
-		}
+		//for idx := 0; idx < 3; idx++ {
+		//	WriteToBuf(playerSteamId64, frame.PredictedVelocity[idx])
+		//}
 		for idx := 0; idx < 2; idx++ {
 			WriteToBuf(playerSteamId64, frame.PredictedAngles[idx])
 		}
+		WriteToBuf(playerSteamId64, frame.PlayerButtons)
 		WriteToBuf(playerSteamId64, frame.CSWeaponID)
-		WriteToBuf(playerSteamId64, frame.PlayerSubtype)
-		WriteToBuf(playerSteamId64, frame.PlayerSeed)
-		WriteToBuf(playerSteamId64, frame.AdditionalFields)
+		WriteToBuf(playerSteamId64, frame.EntityFlay)
+		WriteToBuf(playerSteamId64, frame.MoveType)
+		//WriteToBuf(playerSteamId64, frame.PlayerSubtype)
+		//WriteToBuf(playerSteamId64, frame.PlayerSeed)
+		//WriteToBuf(playerSteamId64, frame.AdditionalFields)
 		// 附加信息
-		if frame.AdditionalFields&FIELDS_ORIGIN != 0 {
-			for idx := 0; idx < 3; idx++ {
-				WriteToBuf(playerSteamId64, frame.AtOrigin[idx])
-			}
-		}
-		if frame.AdditionalFields&FIELDS_ANGLES != 0 {
-			for idx := 0; idx < 3; idx++ {
-				WriteToBuf(playerSteamId64, frame.AtAngles[idx])
-			}
-		}
-		if frame.AdditionalFields&FIELDS_VELOCITY != 0 {
-			for idx := 0; idx < 3; idx++ {
-				WriteToBuf(playerSteamId64, frame.AtVelocity[idx])
-			}
-		}
+		//if frame.AdditionalFields&FIELDS_ORIGIN != 0 {
+		//	for idx := 0; idx < 3; idx++ {
+		//		WriteToBuf(playerSteamId64, frame.AtOrigin[idx])
+		//	}
+		//}
+		//if frame.AdditionalFields&FIELDS_ANGLES != 0 {
+		//	for idx := 0; idx < 3; idx++ {
+		//		WriteToBuf(playerSteamId64, frame.AtAngles[idx])
+		//	}
+		//}
+		//if frame.AdditionalFields&FIELDS_VELOCITY != 0 {
+		//	for idx := 0; idx < 3; idx++ {
+		//		WriteToBuf(playerSteamId64, frame.AtVelocity[idx])
+		//	}
+		//}
 	}
 
 	delete(PlayerFramesMap, playerSteamId64)

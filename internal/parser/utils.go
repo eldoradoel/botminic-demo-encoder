@@ -65,6 +65,13 @@ func parsePlayerFrame(player *common.Player, addonButton int32, tickrate float64
 	// ----- button encode
 	iFrameInfo.PlayerButtons = ButtonConvert(player, addonButton)
 
+	if player.Entity.Property("m_fFlags") != nil {
+		iFrameInfo.EntityFlay = int32(player.Entity.Property("m_fFlags").Value().IntVal)
+	}
+	if (player.Entity.Property("m_MoveType")) != nil {
+		iFrameInfo.MoveType = int32(player.Entity.Property("m_MoveType").Value().IntVal)
+	}
+
 	// ---- weapon encode
 	var currWeaponID int32 = 0
 	if player.ActiveWeapon() != nil {
