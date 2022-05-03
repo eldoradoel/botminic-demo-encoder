@@ -62,7 +62,7 @@ func InitPlayer(initFrame FrameInitInfo) {
 	//ilog.InfoLogger.Println("初始化成功: ", initFrame.PlayerName)
 }
 
-func WriteToRecFileIn128Tick(playerName string, playerSteamId64 uint64, roundNum int32, subdir string) {
+func WriteToRecFileTick(playerName string, playerSteamId64 uint64, roundNum int32, subdir string) {
 	subDir := saveDir + "/round" + strconv.Itoa(int(roundNum)) + "/" + subdir
 	if ok, _ := PathExists(subDir); !ok {
 		os.MkdirAll(subDir, os.ModePerm)
@@ -119,111 +119,6 @@ func WriteToRecFileIn128Tick(playerName string, playerSteamId64 uint64, roundNum
 				WriteToBuf(playerSteamId64, frame.AtVelocity[idx])
 			}
 		}
-	}
-
-	delete(PlayerFramesMap, playerSteamId64)
-	file.Write(bufMap[playerSteamId64].Bytes())
-	ilog.InfoLogger.Printf("[第%d回合] [%s] 录像保存成功: %d.rec\n", roundNum, playerName, playerSteamId64)
-}
-
-func WriteToRecFileIn64Tick(playerName string, playerSteamId64 uint64, roundNum int32, subdir string) {
-	subDir := saveDir + "/round" + strconv.Itoa(int(roundNum)) + "/" + subdir
-	if ok, _ := PathExists(subDir); !ok {
-		os.MkdirAll(subDir, os.ModePerm)
-	}
-	fileName := subDir + "/" + strconv.FormatUint(playerSteamId64, 10) + ".rec"
-	file, err := os.Create(fileName) // 创建文件, "binbin"是文件名字
-	if err != nil {
-		ilog.ErrorLogger.Println("文件创建失败", err.Error())
-		return
-	}
-	defer file.Close()
-
-	// step.8 tick count
-	var realtickCount int32 = int32(len(PlayerFramesMap[playerSteamId64]))
-	var tickCount int32 = int32(realtickCount)*2 - 1
-
-	WriteToBuf(playerSteamId64, tickCount)
-
-	// step.9 bookmark count
-	WriteToBuf(playerSteamId64, int32(0))
-
-	// step.10 all bookmark
-	// ignore
-
-	// step.11 all tick frame
-	for frameindex, frame := range PlayerFramesMap[playerSteamId64] {
-		if int32(frameindex) < realtickCount-1 {
-			WriteToBuf(playerSteamId64, frame.PlayerButtons)
-			WriteToBuf(playerSteamId64, frame.PlayerImpulse)
-			for idx := 0; idx < 3; idx++ {
-				WriteToBuf(playerSteamId64, frame.ActualVelocity[idx])
-			}
-			for idx := 0; idx < 3; idx++ {
-				WriteToBuf(playerSteamId64, frame.PredictedVelocity[idx])
-			}
-			for idx := 0; idx < 2; idx++ {
-				WriteToBuf(playerSteamId64, frame.PredictedAngles[idx])
-			}
-			WriteToBuf(playerSteamId64, frame.CSWeaponID)
-			WriteToBuf(playerSteamId64, frame.PlayerSubtype)
-			WriteToBuf(playerSteamId64, frame.PlayerSeed)
-			WriteToBuf(playerSteamId64, frame.AdditionalFields)
-			// 附加信息
-			if frame.AdditionalFields&FIELDS_ORIGIN != 0 {
-				for idx := 0; idx < 3; idx++ {
-					WriteToBuf(playerSteamId64, frame.AtOrigin[idx])
-				}
-			}
-			if frame.AdditionalFields&FIELDS_ANGLES != 0 {
-				for idx := 0; idx < 3; idx++ {
-					WriteToBuf(playerSteamId64, frame.AtAngles[idx])
-				}
-			}
-			if frame.AdditionalFields&FIELDS_VELOCITY != 0 {
-				for idx := 0; idx < 3; idx++ {
-					WriteToBuf(playerSteamId64, frame.AtVelocity[idx])
-				}
-			}
-			//补帧
-			WriteToBuf(playerSteamId64, frame.PlayerButtons)
-			WriteToBuf(playerSteamId64, frame.PlayerImpulse)
-			for idx := 0; idx < 3; idx++ {
-				WriteToBuf(playerSteamId64, frame.ActualVelocity[idx])
-			}
-			for idx := 0; idx < 3; idx++ {
-				WriteToBuf(playerSteamId64, frame.PredictedVelocity[idx]*0.5)
-			}
-			for idx := 0; idx < 2; idx++ {
-				if idx == 0 {
-					WriteToBuf(playerSteamId64, frame.PredictedAngles[idx]+(PlayerFramesMap[playerSteamId64][frameindex+1].PredictedAngles[idx])/2.0)
-				} else if idx == 1 {
-					angles := AngleNormalize(frame.PredictedAngles[idx] + (GetAngleDiff(PlayerFramesMap[playerSteamId64][frameindex+1].PredictedAngles[idx], frame.PredictedAngles[idx]))/2.0)
-					WriteToBuf(playerSteamId64, angles)
-				}
-			}
-			WriteToBuf(playerSteamId64, frame.CSWeaponID)
-			WriteToBuf(playerSteamId64, frame.PlayerSubtype)
-			WriteToBuf(playerSteamId64, frame.PlayerSeed)
-			WriteToBuf(playerSteamId64, frame.AdditionalFields)
-			// 附加信息
-			if frame.AdditionalFields&FIELDS_ORIGIN != 0 {
-				for idx := 0; idx < 3; idx++ {
-					WriteToBuf(playerSteamId64, frame.AtOrigin[idx])
-				}
-			}
-			if frame.AdditionalFields&FIELDS_ANGLES != 0 {
-				for idx := 0; idx < 3; idx++ {
-					WriteToBuf(playerSteamId64, frame.AtAngles[idx])
-				}
-			}
-			if frame.AdditionalFields&FIELDS_VELOCITY != 0 {
-				for idx := 0; idx < 3; idx++ {
-					WriteToBuf(playerSteamId64, frame.AtVelocity[idx])
-				}
-			}
-		}
-
 	}
 
 	delete(PlayerFramesMap, playerSteamId64)

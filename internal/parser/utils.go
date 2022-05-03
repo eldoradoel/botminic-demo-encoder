@@ -151,22 +151,9 @@ func parsePlayerFrame(player *common.Player, addonButton int32, tickrate float64
 }
 
 func saveToRecFile(player *common.Player, roundNum int32, realTick int) {
-	//if realTick == 64 {
-	//	if player.Team == common.TeamTerrorists {
-	//		encoder.WriteToRecFileIn64Tick(player.Name, player.SteamID64, roundNum, "t")
-	//	} else {
-	//		encoder.WriteToRecFileIn64Tick(player.Name, player.SteamID64, roundNum, "ct")
-	//	}
-	//} else if realTick == 128 {
-	//	if player.Team == common.TeamTerrorists {
-	//		encoder.WriteToRecFileIn128Tick(player.Name, player.SteamID64, roundNum, "t")
-	//	} else {
-	//		encoder.WriteToRecFileIn128Tick(player.Name, player.SteamID64, roundNum, "ct")
-	//	}
-	//}
 	if player.Team == common.TeamTerrorists {
-		encoder.WriteToRecFileIn128Tick(player.Name, player.SteamID64, roundNum, "t")
+		encoder.WriteToRecFileTick(player.Name, player.SteamID64, roundNum, "t")
 	} else {
-		encoder.WriteToRecFileIn128Tick(player.Name, player.SteamID64, roundNum, "ct")
+		encoder.WriteToRecFileTick(player.Name, player.SteamID64, roundNum, "ct")
 	}
 }
