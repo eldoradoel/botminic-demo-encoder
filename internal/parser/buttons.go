@@ -48,6 +48,10 @@ func ButtonConvert(player *common.Player, addonButton int32) int32 {
 		button |= IN_RELOAD
 	}
 
+	if player.IsDefusing || player.IsPlanting {
+		button |= IN_USE
+	}
+
 	//if player.Entity.Property("m_zoomLevel") != nil {
 	//	var zoomLevel = player.Entity.Property("m_zoomLevel").Value().IntVal
 	//
