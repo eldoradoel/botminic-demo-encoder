@@ -31,7 +31,9 @@ func Start(filePath string) {
 	iParserHeader, err := iParser.ParseHeader()
 	if err == nil {
 		ilog.InfoLogger.Printf("demo实际Tick为：%d", int(math.Floor(iParserHeader.FrameRate()+0.5)))
+		ilog.InfoLogger.Printf("demo演示地图为: %s", iParserHeader.MapName)
 		realTick = int(math.Floor(iParserHeader.FrameRate() + 0.5))
+		ilog.InfoLogger.Println(iParserHeader.FrameRate())
 	}
 
 	iParser.RegisterEventHandler(func(e events.FrameDone) {
@@ -50,11 +52,13 @@ func Start(filePath string) {
 						addonButton = val
 						delete(buttonTickMap, key)
 					}
-					if realTick == 64 {
-						parsePlayerFrame(player, addonButton, float64(realTick), false)
-					} else if realTick == 128 {
-						parsePlayerFrame(player, addonButton, float64(realTick), false)
+
+					// 不处理>3回合
+					if roundNum > 3 {
+						return
 					}
+
+					parsePlayerFrame(player, addonButton, roundNum)
 				}
 			}
 		}
@@ -63,7 +67,6 @@ func Start(filePath string) {
 	iParser.RegisterEventHandler(func(e events.MatchStartedChanged) {
 		if e.NewIsStarted && !matchstart {
 			matchstart = true
-			roundNum = 0
 			ilog.InfoLogger.Println("比赛开始")
 		}
 	})
@@ -78,7 +81,7 @@ func Start(filePath string) {
 			for _, player := range Players {
 				if player != nil {
 					// save to rec file
-					saveToRecFile(player, int32(roundNum), realTick)
+					saveToRecFile(player, int32(roundNum))
 				}
 			}
 			ilog.InfoLogger.Println("比赛结束")
@@ -86,21 +89,18 @@ func Start(filePath string) {
 	})
 
 	iParser.RegisterEventHandler(func(e events.RoundStart) {
-		if matchstart {
-			roundstart = true
-			roundNum++
-			ilog.InfoLogger.Printf("回合开始: %d tick: %d", roundNum, iParser.GameState().IngameTick())
-			// 初始化录像文件
-			// 写入所有选手的初始位置和角度
-			gs := iParser.GameState()
-			tPlayers := gs.TeamTerrorists().Members()
-			ctPlayers := gs.TeamCounterTerrorists().Members()
-			Players := append(tPlayers, ctPlayers...)
-			for _, player := range Players {
-				if player != nil {
-					// parse player
-					parsePlayerInitFrame(player)
-				}
+		roundstart = true
+		roundNum++
+		ilog.InfoLogger.Printf("回合开始: %d tick: %d", roundNum, iParser.GameState().IngameTick())
+		// 初始化录像文件
+		gs := iParser.GameState()
+		tPlayers := gs.TeamTerrorists().Members()
+		ctPlayers := gs.TeamCounterTerrorists().Members()
+		Players := append(tPlayers, ctPlayers...)
+		for _, player := range Players {
+			if player != nil {
+				// parse player
+				parsePlayerInitFrame(player, realTick)
 			}
 		}
 	})
@@ -116,7 +116,7 @@ func Start(filePath string) {
 			Players := append(tPlayers, ctPlayers...)
 			for _, player := range Players {
 				if player != nil {
-					saveToRecFile(player, int32(roundNum), realTick)
+					saveToRecFile(player, int32(roundNum))
 				}
 			}
 		}

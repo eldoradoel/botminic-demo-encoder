@@ -34,15 +34,29 @@ const (
 )
 
 func ButtonConvert(player *common.Player, addonButton int32) int32 {
-	var button int32 = addonButton
+	var button = addonButton
+
 	if player.Flags().DuckingKeyPressed() {
 		button |= IN_DUCK
 	}
+
 	if player.IsWalking() {
 		button |= IN_SPEED
 	}
+
 	if player.IsReloading {
 		button |= IN_RELOAD
 	}
+
+	//if player.Entity.Property("m_zoomLevel") != nil {
+	//	var zoomLevel = player.Entity.Property("m_zoomLevel").Value().IntVal
+	//
+	//	if lastzoom != zoomLevel {
+	//		button |= IN_ATTACK2
+	//	}
+	//
+	//	lastzoom = zoomLevel
+	//}
+
 	return button
 }

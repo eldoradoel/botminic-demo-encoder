@@ -3,7 +3,6 @@ package encoder
 import (
 	"bytes"
 	"encoding/binary"
-	"math"
 	"os"
 )
 
@@ -25,18 +24,4 @@ func WriteToBuf(key uint64, data interface{}) {
 		binary.Write(bufMap[key], binary.LittleEndian, data)
 		// bufMap[key].Reset()
 	}
-}
-
-func GetAngleDiff(current float32, previous float32) float32 {
-	var different float64 = float64(current - previous)
-	return float32(different - 360.0*math.Floor((different+180.0)/360.0))
-}
-
-func AngleNormalize(flAngle float32) float32 {
-	if flAngle > 180.0 {
-		return flAngle - 360.0
-	} else if flAngle < -180.0 {
-		return flAngle + 360.0
-	}
-	return flAngle
 }
