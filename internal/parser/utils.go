@@ -25,7 +25,6 @@ func parsePlayerInitFrame(player *common.Player, realTick int) {
 	}
 
 	encoder.InitPlayer(iFrameInit, realTick)
-	ResetZoomLevel()
 
 	delete(bufWeaponMap, player.SteamID64)
 	delete(encoder.PlayerFramesMap, player.SteamID64)
@@ -64,8 +63,8 @@ func parsePlayerFrame(player *common.Player, addonButton int32, roundNum int) {
 		bufWeaponMap[player.SteamID64] = currWeaponID
 	}
 
-	iFrameInfo.BombPlanted = false
-	iFrameInfo.Site = -1
+	iFrameInfo.BombPlanted = 0
+	iFrameInfo.Site = 0
 
 	encoder.PlayerFramesMap[player.SteamID64] = append(encoder.PlayerFramesMap[player.SteamID64], *iFrameInfo)
 }

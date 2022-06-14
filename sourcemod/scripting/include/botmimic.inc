@@ -16,7 +16,7 @@
 
 enum struct event_bomb_planted
 {
-	bool m_bBombPlanted;
+	int m_bBombPlanted; // bool
 	int site;
 }
 
