@@ -1592,6 +1592,8 @@ BMError PlayRecord(int client, const char[] path)
 		gI_BotMimicTickCount[client]             = 0;
 	}
 
+	SetClientName(client, header.FH_recordName);
+
 	return BM_NoError;
 }
 

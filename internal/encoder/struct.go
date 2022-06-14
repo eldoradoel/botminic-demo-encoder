@@ -14,6 +14,6 @@ type FrameInfo struct {
 	MoveType      int32
 	CSWeaponID    int32
 	// event_bomb_planted
-	BombPlanted bool
+	BombPlanted int32
 	Site        int32
 }
