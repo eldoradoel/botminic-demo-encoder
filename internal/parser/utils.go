@@ -30,7 +30,7 @@ func parsePlayerInitFrame(player *common.Player, realTick int) {
 	delete(encoder.PlayerFramesMap, player.SteamID64)
 }
 
-func parsePlayerFrame(player *common.Player, addonButton int32, roundNum int) {
+func parsePlayerFrame(player *common.Player, addonButton int32, roundNum int, eventBombPlanted EventBombPlanted) {
 	iFrameInfo := new(encoder.FrameInfo)
 	iFrameInfo.Origin[0] = float32(player.Position().X)
 	iFrameInfo.Origin[1] = float32(player.Position().Y)
@@ -63,16 +63,23 @@ func parsePlayerFrame(player *common.Player, addonButton int32, roundNum int) {
 		bufWeaponMap[player.SteamID64] = currWeaponID
 	}
 
-	iFrameInfo.BombPlanted = 0
-	iFrameInfo.Site = 0
+	// ---- event_bomb_planted
+	if eventBombPlanted.BombPlanted {
+		ilog.InfoLogger.Println("bomb planted")
+		iFrameInfo.BombPlanted = 1
+		iFrameInfo.Site = eventBombPlanted.Site
+	} else {
+		iFrameInfo.BombPlanted = 0
+		iFrameInfo.Site = 0
+	}
 
 	encoder.PlayerFramesMap[player.SteamID64] = append(encoder.PlayerFramesMap[player.SteamID64], *iFrameInfo)
 }
 
 func saveToRecFile(player *common.Player, roundNum int32) {
 	if player.Team == common.TeamTerrorists {
-		encoder.WriteToRecFileByTick(player.Name, player.SteamID64, roundNum, "t")
+		encoder.WriteToRecFile(player.Name, player.SteamID64, roundNum, "t")
 	} else {
-		encoder.WriteToRecFileByTick(player.Name, player.SteamID64, roundNum, "ct")
+		encoder.WriteToRecFile(player.Name, player.SteamID64, roundNum, "ct")
 	}
 }

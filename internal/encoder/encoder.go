@@ -53,10 +53,10 @@ func InitPlayer(initFrame FrameInitInfo, realTick int) {
 	ilog.InfoLogger.Println("初始化成功: ", initFrame.PlayerName)
 }
 
-func WriteToRecFileByTick(playerName string, playerSteamId64 uint64, roundNum int32, subdir string) {
-	if roundNum > 3 {
-		return
-	}
+func WriteToRecFile(playerName string, playerSteamId64 uint64, roundNum int32, subdir string) {
+	//if roundNum > 3 {
+	//	return
+	//}
 
 	subDir := saveDir + "/round" + strconv.Itoa(int(roundNum)) + "/" + subdir
 	if ok, _ := PathExists(subDir); !ok {
