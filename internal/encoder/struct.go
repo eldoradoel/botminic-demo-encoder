@@ -16,4 +16,6 @@ type FrameInfo struct {
 	// event_bomb_planted
 	BombPlanted int32
 	Site        int32
+	// event_item_drop
+	ItemDropped int32
 }

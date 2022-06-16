@@ -20,9 +20,15 @@ enum struct event_bomb_planted
 	int site;
 }
 
+enum struct event_item_drop
+{
+	int entity;
+}
+
 enum struct gameevent_t
 {
 	event_bomb_planted bomb_planted;
+	event_item_drop item_drop;
 }
 
 enum struct FrameInfo
