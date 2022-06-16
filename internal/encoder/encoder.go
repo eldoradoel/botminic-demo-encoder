@@ -93,6 +93,7 @@ func WriteToRecFile(playerName string, playerSteamId64 uint64, roundNum int32, s
 		WriteToBuf(playerSteamId64, frame.CSWeaponID)
 		WriteToBuf(playerSteamId64, frame.BombPlanted)
 		WriteToBuf(playerSteamId64, frame.Site)
+		WriteToBuf(playerSteamId64, frame.ItemDropped)
 	}
 
 	delete(PlayerFramesMap, playerSteamId64)

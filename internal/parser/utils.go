@@ -10,6 +10,7 @@ const Pi = 3.14159265358979323846
 const MOVETYPE_WALK = 2 /**< Player only - moving on the ground */
 
 var bufWeaponMap = make(map[uint64]int32)
+var bufZoomLevelMap = make(map[uint64]int)
 
 // Function to handle errors
 func checkError(err error) {
@@ -27,10 +28,11 @@ func parsePlayerInitFrame(player *common.Player, realTick int) {
 	encoder.InitPlayer(iFrameInit, realTick)
 
 	delete(bufWeaponMap, player.SteamID64)
+	delete(bufZoomLevelMap, player.SteamID64)
 	delete(encoder.PlayerFramesMap, player.SteamID64)
 }
 
-func parsePlayerFrame(player *common.Player, addonButton int32, roundNum int, eventBombPlanted EventBombPlanted) {
+func parsePlayerFrame(player *common.Player, addonButton int32, roundNum int, eventBombPlanted EventBombPlanted, itemDropped int32) {
 	iFrameInfo := new(encoder.FrameInfo)
 	iFrameInfo.Origin[0] = float32(player.Position().X)
 	iFrameInfo.Origin[1] = float32(player.Position().Y)
@@ -65,12 +67,17 @@ func parsePlayerFrame(player *common.Player, addonButton int32, roundNum int, ev
 
 	// ---- event_bomb_planted
 	if eventBombPlanted.BombPlanted {
-		ilog.InfoLogger.Println("bomb planted")
 		iFrameInfo.BombPlanted = 1
 		iFrameInfo.Site = eventBombPlanted.Site
 	} else {
 		iFrameInfo.BombPlanted = 0
 		iFrameInfo.Site = 0
+	}
+
+	if itemDropped != -1 {
+		iFrameInfo.ItemDropped = itemDropped
+	} else {
+		iFrameInfo.ItemDropped = -1
 	}
 
 	encoder.PlayerFramesMap[player.SteamID64] = append(encoder.PlayerFramesMap[player.SteamID64], *iFrameInfo)

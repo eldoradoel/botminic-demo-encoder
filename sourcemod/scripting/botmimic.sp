@@ -5,6 +5,7 @@
 #include <smlib>
 #include <sourcemod>
 #include <dhooks>
+#include <ripext>
 
 
 
@@ -108,6 +109,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginStart()
 {
+	PrintToServer("%d", sizeof(FrameInfo));
 	RegConsoleCmd("sm_speed", Command_Speed);
 
 	AutoExecConfig();
@@ -531,7 +533,8 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	// bot is on ground.. if the distance between the previous position is much bigger (1.5x) than the expected according
 	// to the bot's velocity, teleport to avoid sync issues
 	if(gF_PlaybackSpeed == 2.0 || (GetVectorLength(vecVelocity) > 10000.0 ||
-		(bWalk && GetVectorDistance(vecPreviousPos, frame.pos) > GetVectorLength(vecVelocity) / gF_Tickrate * 1.5)))
+		(bWalk && GetVectorDistance(vecPreviousPos, frame.pos) > GetVectorLength(vecVelocity) / gF_Tickrate * 1.5)) || 
+		buttons & IN_USE /* planting or defusing? */)
 	{
 		TeleportEntity(client, frame.pos, ang, gF_PlaybackSpeed == 2.0 ? vecVelocity : NULL_VECTOR);
 	}
@@ -595,6 +598,14 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	if(frame.events.bomb_planted.m_bBombPlanted && !GameRules_GetProp("m_bBombPlanted"))
 	{
 		DoPlantBomb(client, frame.events.bomb_planted.site);
+	}
+
+	if(frame.events.item_drop.entity != -1)
+	{
+		if (IsPlayerAlive(client) && frame.events.item_drop.entity == client)
+		{
+			FakeClientCommand(client, "drop");
+		}
 	}
 
 	if (gF_PlaybackSpeed == 2.0)
@@ -678,11 +689,11 @@ public void Event_OnPlayerDeath(Event event, const char[] name, bool dontBroadca
 		BotMimic_StopRecording(client, true);
 	}
 	// This bot has been playing one
-	else if (gA_BotMimics[client] != null)
+	/* else if (gA_BotMimics[client] != null)
 	{
 		// Respawn the bot after death!
 		gI_BotMimicTick[client] = 0;
-	}
+	} */
 }
 
 public void Event_OnBomb_Planted(Event event, const char[] name, bool dontBroadcast)
@@ -1505,10 +1516,27 @@ BMError LoadRecordFromFile(const char[] path, const char[] sCategory, FileHeader
 	ArrayList hRecordFrames       = new ArrayList(sizeof(FrameInfo));
 
 	any aFrameData[sizeof(FrameInfo)];
+	//JSONArray arr = new JSONArray();
 	for (int i = 0; i < iTickCount; i++)
 	{
 		hFile.Read(aFrameData, sizeof(FrameInfo), 4);
 		hRecordFrames.PushArray(aFrameData, sizeof(FrameInfo));
+		/* JSONObject js = new JSONObject();
+		js.SetFloat("pos[0]", aFrameData[0]);
+		js.SetFloat("pos[1]", aFrameData[1]);
+		js.SetFloat("pos[2]", aFrameData[2]);
+		js.SetFloat("ang[0]", aFrameData[3]);
+		js.SetFloat("ang[1]", aFrameData[4]);
+		js.SetInt("buttons", aFrameData[5]);
+		js.SetFloat("flags", aFrameData[6]);
+		js.SetFloat("mt", aFrameData[7]);
+		js.SetFloat("newWeapon", aFrameData[8]);
+		js.SetFloat("m_bBombPlanted", aFrameData[9]);
+		js.SetFloat("site", aFrameData[10]);
+		js.SetFloat("m_bItemDropped", aFrameData[11]);
+		arr.Push(js);
+
+		delete js; */
 	}
 
 	header.FH_frames = hRecordFrames;
@@ -1516,6 +1544,18 @@ BMError LoadRecordFromFile(const char[] path, const char[] sCategory, FileHeader
 	gSM_LoadedMimics.SetArray(path, header, sizeof(FileHeader));
 
 	delete hFile;
+
+	/* JSONObject json = new JSONObject();
+	json.SetInt("magic", iMagic);
+	json.SetInt("version", header.FH_binaryFormatVersion);
+	json.SetInt("tickrate", header.FH_tickrate);
+	json.SetInt("recordtime", header.FH_recordEndTime);
+	json.SetInt("namelen", iNameLength);
+	json.SetInt("tickcount", header.FH_tickCount);
+	json.Set("frames", arr);
+	json.ToFile("botmimic.json");
+	delete arr;
+	delete json; */
 
 	return BM_NoError;
 }

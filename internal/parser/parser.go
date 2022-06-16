@@ -30,6 +30,7 @@ func Start(filePath string) {
 	// 处理特殊event构成的button表示
 	var buttonTickMap map[TickPlayer]int32 = make(map[TickPlayer]int32)
 	var bombPlantedTickMap map[TickPlayer]EventBombPlanted = make(map[TickPlayer]EventBombPlanted)
+	var itemDropTickMap map[TickPlayer]int32 = make(map[TickPlayer]int32)
 	var roundstart bool = false
 	var matchstart bool = false
 	var roundNum int = 0
@@ -65,12 +66,18 @@ func Start(filePath string) {
 						delete(bombPlantedTickMap, key)
 					}
 
+					var itemDropped int32 = -1
+					if val, ok := itemDropTickMap[key]; ok {
+						itemDropped = val
+						delete(itemDropTickMap, key)
+					}
+
 					// 不处理>3回合
 					//if roundNum > 3 {
 					//	return
 					//}
 
-					parsePlayerFrame(player, addonButton, roundNum, eventBombPlant)
+					parsePlayerFrame(player, addonButton, roundNum, eventBombPlant, itemDropped)
 				}
 			}
 		}
@@ -170,6 +177,18 @@ func Start(filePath string) {
 		}
 
 		bombPlantedTickMap[key] = event
+	})
+
+	iParser.RegisterEventHandler(func(e events.ItemDrop) {
+		gs := iParser.GameState()
+		currentTick := gs.IngameTick()
+		key := TickPlayer{currentTick, e.Player.SteamID64}
+		var p = e.Player
+		if p != nil {
+			itemDropTickMap[key] = int32(p.EntityID)
+		} else {
+			itemDropTickMap[key] = -1
+		}
 	})
 
 	err = iParser.ParseToEnd()
