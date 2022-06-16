@@ -21,6 +21,7 @@ func Start(filePath string) {
 	var buttonTickMap = make(map[TickPlayer]int32)
 	var bombPlantedTickMap = make(map[TickPlayer]EventBombPlanted)
 	var itemDropTickMap = make(map[TickPlayer]int32)
+	var connectedPlayerMap = make(map[uint64]int32)
 	var roundstart = false
 	var matchstart = false
 	var roundNum = 0
@@ -62,12 +63,14 @@ func Start(filePath string) {
 						delete(itemDropTickMap, key)
 					}
 
+					var eventPlayerDeath EventPlayerDeath
+
 					// 不处理>3回合
 					//if roundNum > 3 {
 					//	return
 					//}
 
-					parsePlayerFrame(player, addonButton, roundNum, eventBombPlant, itemDropped)
+					parsePlayerFrame(player, addonButton, roundNum, eventBombPlant, itemDropped, eventPlayerDeath)
 				}
 			}
 		}
@@ -90,7 +93,7 @@ func Start(filePath string) {
 			for _, player := range Players {
 				if player != nil {
 					// save to rec file
-					saveToRecFile(player, int32(roundNum))
+					saveToRecFile(player, int32(roundNum), connectedPlayerMap[player.SteamID64])
 				}
 			}
 			ilog.InfoLogger.Println("比赛结束")
@@ -125,7 +128,7 @@ func Start(filePath string) {
 			Players := append(tPlayers, ctPlayers...)
 			for _, player := range Players {
 				if player != nil {
-					saveToRecFile(player, int32(roundNum))
+					saveToRecFile(player, int32(roundNum), connectedPlayerMap[player.SteamID64])
 				}
 			}
 		}
@@ -177,6 +180,40 @@ func Start(filePath string) {
 		if e.Player != nil {
 			key := TickPlayer{currentTick, e.Player.SteamID64}
 			itemDropTickMap[key] = int32(e.Player.EntityID)
+		}
+	})
+
+	iParser.RegisterEventHandler(func(e events.Kill) {
+		gs := iParser.GameState()
+		currentTick := gs.IngameTick()
+		//key := TickPlayer{currentTick, e.Victim.SteamID64}
+
+		ilog.InfoLogger.Printf("%s killed %s, tick -> %d", e.Killer, e.Victim, currentTick)
+
+		var event EventPlayerDeath
+		event.Killed = true
+
+		if e.Victim != nil && e.Killer != nil {
+			event.Victim = int32(e.Victim.EntityID)
+			event.Attacker = int32(e.Killer.EntityID)
+			if e.IsHeadshot {
+				event.HitGroup = int32(events.HitGroupHead)
+			} else {
+				event.HitGroup = int32(events.HitGroupChest)
+			}
+		} else {
+			event.Killed = false
+		}
+
+		var eventBombPlant EventBombPlanted
+		var itemDropped int32
+
+		parsePlayerFrame(e.Victim, 0, roundNum, eventBombPlant, itemDropped, event)
+	})
+
+	iParser.RegisterEventHandler(func(e events.PlayerConnect) {
+		if e.Player != nil {
+			connectedPlayerMap[e.Player.SteamID64] = int32(e.Player.EntityID - 1)
 		}
 	})
 

@@ -32,7 +32,7 @@ func parsePlayerInitFrame(player *common.Player, realTick int) {
 	delete(encoder.PlayerFramesMap, player.SteamID64)
 }
 
-func parsePlayerFrame(player *common.Player, addonButton int32, roundNum int, eventBombPlanted EventBombPlanted, itemDropped int32) {
+func parsePlayerFrame(player *common.Player, addonButton int32, roundNum int, eventBombPlanted EventBombPlanted, itemDropped int32, eventPlayerDeathed EventPlayerDeath) {
 	iFrameInfo := new(encoder.FrameInfo)
 	iFrameInfo.Origin[0] = float32(player.Position().X)
 	iFrameInfo.Origin[1] = float32(player.Position().Y)
@@ -47,7 +47,9 @@ func parsePlayerFrame(player *common.Player, addonButton int32, roundNum int, ev
 		iFrameInfo.EntityFlag = int32(player.Entity.Property("m_fFlags").Value().IntVal)
 	}
 
-	iFrameInfo.MoveType = MOVETYPE_WALK
+	if (player.Entity.Property("m_MoveType")) != nil {
+		iFrameInfo.MoveType = int32(player.Entity.Property("m_MoveType").Value().IntVal)
+	}
 
 	// ---- weapon encode
 	var currWeaponID int32 = 0
@@ -67,26 +69,50 @@ func parsePlayerFrame(player *common.Player, addonButton int32, roundNum int, ev
 
 	// ---- event_bomb_planted
 	if eventBombPlanted.BombPlanted {
-		iFrameInfo.BombPlanted = 1
 		iFrameInfo.Site = eventBombPlanted.Site
 	} else {
-		iFrameInfo.BombPlanted = 0
-		iFrameInfo.Site = 0
+		iFrameInfo.Site = -1
 	}
 
+	// ---- event_item_drop
 	if itemDropped != -1 {
 		iFrameInfo.ItemDropped = itemDropped
 	} else {
 		iFrameInfo.ItemDropped = -1
 	}
 
+	// ---- event_player_death
+	if eventPlayerDeathed.Killed {
+		iFrameInfo.Victim = eventPlayerDeathed.Victim
+		iFrameInfo.Attacker = eventPlayerDeathed.Attacker
+		iFrameInfo.HitGroup = eventPlayerDeathed.HitGroup
+		ilog.InfoLogger.Printf("%d killed %d", iFrameInfo.Attacker, iFrameInfo.Victim)
+	} else {
+		iFrameInfo.Victim = -1
+	}
+
+	iFrameInfo.Health = int32(player.Health())
+	iFrameInfo.Armor = int32(player.Armor())
+
+	if player.HasDefuseKit() {
+		iFrameInfo.HasDefuser = 1
+	} else {
+		iFrameInfo.HasDefuser = 0
+	}
+
+	if player.HasHelmet() {
+		iFrameInfo.HasHelmet = 1
+	} else {
+		iFrameInfo.HasHelmet = 0
+	}
+
 	encoder.PlayerFramesMap[player.SteamID64] = append(encoder.PlayerFramesMap[player.SteamID64], *iFrameInfo)
 }
 
-func saveToRecFile(player *common.Player, roundNum int32) {
+func saveToRecFile(player *common.Player, roundNum int32, uniqueID int32) {
 	if player.Team == common.TeamTerrorists {
-		encoder.WriteToRecFile(player.Name, player.SteamID64, roundNum, "t")
+		encoder.WriteToRecFile(player.Name, player.SteamID64, roundNum, "t", uniqueID)
 	} else {
-		encoder.WriteToRecFile(player.Name, player.SteamID64, roundNum, "ct")
+		encoder.WriteToRecFile(player.Name, player.SteamID64, roundNum, "ct", uniqueID)
 	}
 }

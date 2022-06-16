@@ -14,8 +14,16 @@ type FrameInfo struct {
 	MoveType      int32
 	CSWeaponID    int32
 	// event_bomb_planted
-	BombPlanted int32
-	Site        int32
+	Site int32
 	// event_item_drop
 	ItemDropped int32
+	// event_player_death
+	Victim   int32
+	Attacker int32
+	HitGroup int32
+	// props
+	Health     int32
+	Armor      int32
+	HasDefuser int32
+	HasHelmet  int32
 }

@@ -53,27 +53,30 @@ func InitPlayer(initFrame FrameInitInfo, realTick int) {
 	ilog.InfoLogger.Println("初始化成功: ", initFrame.PlayerName)
 }
 
-func WriteToRecFile(playerName string, playerSteamId64 uint64, roundNum int32, subdir string) {
+func WriteToRecFile(playerName string, playerSteamId64 uint64, roundNum int32, team string, uniqueID int32) {
 	//if roundNum > 3 {
 	//	return
 	//}
 
-	subDir := saveDir + "/round" + strconv.Itoa(int(roundNum)) + "/" + subdir
+	subDir := saveDir + "/round" + strconv.Itoa(int(roundNum)) + "/"
 	if ok, _ := PathExists(subDir); !ok {
 		os.MkdirAll(subDir, os.ModePerm)
+		ilog.InfoLogger.Println(subDir)
 	}
 
-	fileName := subDir + "/" + strconv.FormatUint(playerSteamId64, 10) + ".rec"
+	fileName := subDir + strconv.FormatUint(uint64(uniqueID), 10) + "_" + team + ".rec"
 	file, err := os.Create(fileName) // 创建文件, "binbin"是文件名字
 	if err != nil {
 		ilog.ErrorLogger.Println("文件创建失败", err.Error())
 		return
+	} else {
+		ilog.InfoLogger.Println(fileName)
 	}
 
 	defer file.Close()
 
 	// step.6 tick count
-	var tickCount = int32(len(PlayerFramesMap[playerSteamId64]))
+	var tickCount = int32(len(PlayerFramesMap[playerSteamId64])) + 1
 
 	WriteToBuf(playerSteamId64, tickCount)
 
@@ -91,9 +94,19 @@ func WriteToRecFile(playerName string, playerSteamId64 uint64, roundNum int32, s
 		WriteToBuf(playerSteamId64, frame.EntityFlag)
 		WriteToBuf(playerSteamId64, frame.MoveType)
 		WriteToBuf(playerSteamId64, frame.CSWeaponID)
-		WriteToBuf(playerSteamId64, frame.BombPlanted)
+		// event_bomb_planted
 		WriteToBuf(playerSteamId64, frame.Site)
+		// event_item_drop
 		WriteToBuf(playerSteamId64, frame.ItemDropped)
+		// event_player_death
+		WriteToBuf(playerSteamId64, frame.Victim)
+		WriteToBuf(playerSteamId64, frame.Attacker)
+		WriteToBuf(playerSteamId64, frame.HitGroup)
+		// player props
+		WriteToBuf(playerSteamId64, frame.Health)
+		WriteToBuf(playerSteamId64, frame.Armor)
+		WriteToBuf(playerSteamId64, frame.HasDefuser)
+		WriteToBuf(playerSteamId64, frame.HasHelmet)
 	}
 
 	delete(PlayerFramesMap, playerSteamId64)
