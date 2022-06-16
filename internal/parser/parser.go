@@ -9,16 +9,6 @@ import (
 	events "github.com/markus-wa/demoinfocs-golang/v2/pkg/demoinfocs/events"
 )
 
-type TickPlayer struct {
-	tick    int
-	steamid uint64
-}
-
-type EventBombPlanted struct {
-	BombPlanted bool
-	Site        int32
-}
-
 func Start(filePath string) {
 
 	iFile, err := os.Open(filePath)
@@ -28,13 +18,13 @@ func Start(filePath string) {
 	defer iParser.Close()
 
 	// 处理特殊event构成的button表示
-	var buttonTickMap map[TickPlayer]int32 = make(map[TickPlayer]int32)
-	var bombPlantedTickMap map[TickPlayer]EventBombPlanted = make(map[TickPlayer]EventBombPlanted)
-	var itemDropTickMap map[TickPlayer]int32 = make(map[TickPlayer]int32)
-	var roundstart bool = false
-	var matchstart bool = false
-	var roundNum int = 0
-	var realTick int = 0
+	var buttonTickMap = make(map[TickPlayer]int32)
+	var bombPlantedTickMap = make(map[TickPlayer]EventBombPlanted)
+	var itemDropTickMap = make(map[TickPlayer]int32)
+	var roundstart = false
+	var matchstart = false
+	var roundNum = 0
+	var realTick = 0
 	iParserHeader, err := iParser.ParseHeader()
 	if err == nil {
 		ilog.InfoLogger.Printf("demo实际Tick为：%d", int(math.Floor(iParserHeader.FrameRate()+0.5)))
@@ -141,6 +131,7 @@ func Start(filePath string) {
 		}
 	})
 
+	//开火cmd
 	iParser.RegisterEventHandler(func(e events.WeaponFire) {
 		gs := iParser.GameState()
 		currentTick := gs.IngameTick()
@@ -152,6 +143,7 @@ func Start(filePath string) {
 		}
 	})
 
+	//跳跃cmd
 	iParser.RegisterEventHandler(func(e events.PlayerJump) {
 		gs := iParser.GameState()
 		currentTick := gs.IngameTick()
@@ -182,12 +174,9 @@ func Start(filePath string) {
 	iParser.RegisterEventHandler(func(e events.ItemDrop) {
 		gs := iParser.GameState()
 		currentTick := gs.IngameTick()
-		key := TickPlayer{currentTick, e.Player.SteamID64}
-		var p = e.Player
-		if p != nil {
-			itemDropTickMap[key] = int32(p.EntityID)
-		} else {
-			itemDropTickMap[key] = -1
+		if e.Player != nil {
+			key := TickPlayer{currentTick, e.Player.SteamID64}
+			itemDropTickMap[key] = int32(e.Player.EntityID)
 		}
 	})
 
