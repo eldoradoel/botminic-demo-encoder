@@ -16,7 +16,6 @@
 
 enum struct event_bomb_planted
 {
-	int m_bBombPlanted; // bool
 	int site;
 }
 
@@ -25,10 +24,18 @@ enum struct event_item_drop
 	int entity;
 }
 
+enum struct event_player_death
+{
+	int victim;
+	int attacker;
+	int hitgroup;
+}
+
 enum struct gameevent_t
 {
 	event_bomb_planted bomb_planted;
 	event_item_drop item_drop;
+	event_player_death player_death;
 }
 
 enum struct FrameInfo
@@ -40,6 +47,10 @@ enum struct FrameInfo
 	MoveType mt;
 	CSWeaponID newWeapon;
 	gameevent_t events;
+	int health;
+	int armor;
+	int hasDefuser;
+	int hasHelmet;
 }
 
 enum BMError

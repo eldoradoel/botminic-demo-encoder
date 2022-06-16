@@ -2,7 +2,6 @@ package parser
 
 import (
 	"botminic-demo-encoder/internal/encoder"
-	ilog "botminic-demo-encoder/internal/logger"
 	common "github.com/markus-wa/demoinfocs-golang/v2/pkg/demoinfocs/common"
 )
 
@@ -64,7 +63,6 @@ func ButtonConvert(player *common.Player, addonButton int32) int32 {
 			} else if bufZoomLevelMap[player.SteamID64] != zoomLevel {
 				bufZoomLevelMap[player.SteamID64] = zoomLevel
 				button |= IN_ATTACK2
-				ilog.InfoLogger.Printf("玩家 %s 开镜了 -> %d", player.Name, zoomLevel)
 			}
 		}
 	}

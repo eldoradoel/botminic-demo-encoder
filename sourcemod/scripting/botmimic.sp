@@ -6,7 +6,9 @@
 #include <sourcemod>
 #include <dhooks>
 #include <ripext>
+#include <PTaH>
 
+#define DEBUG 0
 
 
 #pragma newdecls required
@@ -57,6 +59,7 @@ bool gB_DoMiddleFrame[MAXPLAYERS+1];
 bool gB_ShouldLoop[MAXPLAYERS+1];
 
 DynamicHook gH_UpdateStepSound = null;
+Handle gH_GetBonePosition;
 
 GlobalForward gH_Forward_OnStartRecording = null;
 GlobalForward gH_Forward_OnRecordingPauseStateChanged = null;
@@ -127,6 +130,7 @@ public void OnPluginStart()
 	gA_SortedCategoryList = new ArrayList(ByteCountToCells(64));
 
 	HookEvent("player_spawn", Event_OnPlayerSpawn);
+	HookEvent("player_death", Event_OnPlayerDeath_Pre, EventHookMode_Pre);
 	HookEvent("player_death", Event_OnPlayerDeath);
 	HookEvent("bomb_planted", Event_OnBomb_Planted);
 	HookEvent("bomb_defused", Event_OnBomb_Defused);
@@ -167,7 +171,23 @@ void LoadDhooks()
 		LogError("Couldn't get the offset for \"CBasePlayer::UpdateStepSound\" - make sure your gamedata is updated!");
 	}
 
+	StartPrepSDKCall(SDKCall_Entity);
+	PrepSDKCall_SetFromConf(gamedata, SDKConf_Signature, "CBaseAnimating::GetBonePosition");
+	PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
+	PrepSDKCall_AddParameter(SDKType_Vector, SDKPass_ByRef, _, VENCODE_FLAG_COPYBACK);
+	PrepSDKCall_AddParameter(SDKType_QAngle, SDKPass_ByRef, _, VENCODE_FLAG_COPYBACK);
+	if ((gH_GetBonePosition = EndPrepSDKCall()) == INVALID_HANDLE)
+	{
+		LogError("Couldn't get the signature for \"CBaseAnimating::GetBonePosition\" - make sure your gamedata is updated!");
+	}
+
 	delete gamedata;
+}
+
+// Get the entity target bone position
+void GetBonePosition(int iEntity, int iBone, float fOrigin[3], float fAngles[3])
+{
+	SDKCall(gH_GetBonePosition, iEntity, iBone, fOrigin, fAngles);
 }
 
 public Action Command_Speed(int client, int args)
@@ -403,6 +423,14 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse, const float
 		}
 	}
 
+	frame.events.bomb_planted.site = -1;
+	frame.events.item_drop.entity = -1;
+	frame.events.player_death.victim = -1;
+	frame.health = GetClientHealth(client);
+	frame.armor = GetClientArmor(client);
+	frame.hasDefuser = GetEntProp(client, Prop_Send, "m_bHasDefuser");
+	frame.hasHelmet = GetEntProp(client, Prop_Send, "m_bHasHelmet");
+
 	gA_PlayerFrames[client].PushArray(frame, sizeof(FrameInfo));
 
 	gI_PlayerFrames[client]++;
@@ -432,7 +460,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 
 		if(!gB_ShouldLoop[client]) // not loop anymore, stop them from mimicing
 		{
-			BotMimic_StopPlayerMimic(client);
+			CreateTimer(0.1, Timer_StopPlayerMimic, GetClientSerial(client));
 
 			return Plugin_Continue;
 		}
@@ -478,6 +506,41 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	FrameInfo frame;
 	gA_BotMimics[client].GetArray(gI_BotMimicTick[client], frame, sizeof(FrameInfo));
 
+	/* if(IsValidClient(frame.events.player_death.victim) && IsValidClient(frame.events.player_death.attacker))
+	{
+		int eWeapon = GetEntPropEnt(frame.events.player_death.attacker, Prop_Data, "m_hActiveWeapon");
+
+		if(eWeapon != -1)
+		{
+			float targetPos[3];
+			float targetAng[3];
+			GetBonePosition(frame.events.player_death.victim, frame.events.player_death.hitgroup, targetPos, targetAng);
+			CEconItemView pItem = PTaH_GetEconItemViewFromEconEntity(eWeapon);
+			PTaH_FX_FireBullets(frame.events.player_death.attacker, pItem, targetPos, targetAng, 0, 0, 0.0, 0.0, 0.0, 0, 0.0);
+			PrintToChatAll("DO FX -> %f %f %f", targetPos[0], targetPos[1], targetPos[2]);
+		}
+	} */
+	if(IsValidClient(frame.events.player_death.victim) && gI_BotMimicTick[client] + 1 < gI_BotMimicTickCount[client])
+	{
+		FrameInfo asdf;
+		gA_BotMimics[client].GetArray(gI_BotMimicTick[client] + 1, asdf, sizeof(FrameInfo));
+
+		if (IsValidClient(asdf.events.player_death.victim))
+		{
+			//PrintToChatAll("player_death victim -> %N, attacker -> %N", frame.events.player_death.victim, frame.events.player_death.attacker);
+			DataPack dp = new DataPack();
+			dp.WriteCell(GetClientSerial(frame.events.player_death.victim));
+			dp.WriteCell(GetClientSerial(frame.events.player_death.attacker));
+			dp.WriteCell(frame.events.player_death.hitgroup);
+
+			RequestFrame(Frame_KillPlayer, dp);
+		}
+	}
+
+	SetEntityHealth(client, frame.health);
+	SetEntProp(client, Prop_Data, "m_ArmorValue", frame.armor, 1);
+	SetEntProp(client, Prop_Send, "m_bHasDefuser", frame.hasDefuser);
+	SetEntProp(client, Prop_Send, "m_bHasHelmet", frame.hasHelmet);
 	buttons = frame.buttons;
 	weapon  = 0;
 
@@ -553,6 +616,19 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		Call_Finish();
 	}
 
+	if(frame.events.bomb_planted.site != -1 && !GameRules_GetProp("m_bBombPlanted"))
+	{
+		DoPlantBomb(client, frame.events.bomb_planted.site);
+	}
+
+	if(frame.events.item_drop.entity != -1)
+	{
+		if (frame.events.item_drop.entity == client)
+		{
+			FakeClientCommand(client, "drop");
+		}
+	}
+
 	if (frame.newWeapon != CSWeapon_NONE)
 	{
 		char sAlias[64];
@@ -595,19 +671,6 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		Client_SetActiveWeapon(client, gI_BotActiveWeapon[client]);
 	}
 
-	if(frame.events.bomb_planted.m_bBombPlanted && !GameRules_GetProp("m_bBombPlanted"))
-	{
-		DoPlantBomb(client, frame.events.bomb_planted.site);
-	}
-
-	if(frame.events.item_drop.entity != -1)
-	{
-		if (IsPlayerAlive(client) && frame.events.item_drop.entity == client)
-		{
-			FakeClientCommand(client, "drop");
-		}
-	}
-
 	if (gF_PlaybackSpeed == 2.0)
 	{
 		gI_BotMimicTick[client] += 2;
@@ -627,6 +690,63 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	}
 
 	return Plugin_Changed;
+}
+
+public void Frame_KillPlayer(DataPack dp)
+{
+	dp.Reset();
+
+	int victim = GetClientFromSerial(dp.ReadCell());
+	int attacker = GetClientFromSerial(dp.ReadCell());
+	int hitgroup = dp.ReadCell();
+
+	delete dp;
+
+	if(IsValidClient(victim, true) && IsValidClient(attacker, true))
+	{
+		Event e = CreateEvent("player_death");
+
+		if (e != null)
+		{
+			e.SetInt("userid", GetClientUserId(victim));
+			e.SetInt("attacker", GetClientUserId(attacker));
+			e.SetInt("assister", 0);
+			e.SetBool("headshot", hitgroup == 1);
+
+			int weapon = GetEntPropEnt(attacker, Prop_Send, "m_hActiveWeapon");
+			char sWeapon[64];
+			GetEntityClassname(weapon, sWeapon, sizeof(sWeapon));
+			e.SetString("weapon", sWeapon);
+
+			e.Fire();
+		}
+
+		ForcePlayerSuicide(victim);
+	}
+}
+
+public Action Timer_StopPlayerMimic(Handle timer, any serial)
+{
+	int client = GetClientFromSerial(serial);
+
+	if(IsValidClient(client))
+	{
+		BotMimic_StopPlayerMimic(client);
+		RequestFrame(Frame_CheckIfDead, GetClientSerial(client));
+	}
+
+	return Plugin_Stop;
+}
+
+public void Frame_CheckIfDead(any serial)
+{
+	int client = GetClientFromSerial(serial);
+
+	if(IsValidClient(client, true) && !IsRoundEnded())
+	{
+		LogError("玩家 %N 播放完毕但未死亡, 极可能是Demo解析问题, 已将其(安静地)处死", client);
+		ForcePlayerSuicide(client); // suicide silently
+	}
 }
 
 void ApplyFlags(int &flags1, int flags2, int flag)
@@ -677,11 +797,32 @@ public void Event_OnPlayerSpawn(Event event, const char[] name, bool dontBroadca
 	}
 }
 
+public Action Event_OnPlayerDeath_Pre(Event event, const char[] name, bool dontBroadcast)
+{
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	int attacker = GetClientOfUserId(event.GetInt("attacker"));
+
+	if (!IsValidClient(client) || !IsValidClient(attacker))
+	{
+		return Plugin_Continue;
+	}
+
+	if (client == attacker)
+	{
+		event.BroadcastDisabled = true;
+		return Plugin_Handled;
+	}
+
+	return Plugin_Continue;
+}
+
 public void Event_OnPlayerDeath(Event event, const char[] name, bool dontBroadcast)
 {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if (!client)
+	if (!IsValidClient(client))
+	{
 		return;
+	}
 
 	// This one has been recording currently
 	if (gA_PlayerFrames[client] != null)
@@ -711,7 +852,6 @@ public void Event_OnBomb_Planted(Event event, const char[] name, bool dontBroadc
 	FrameInfo aFrame;
 	gA_PlayerFrames[client].GetArray(idx, aFrame, sizeof(FrameInfo));
 
-	aFrame.events.bomb_planted.m_bBombPlanted = true;
 	aFrame.events.bomb_planted.site = site;
 	gA_PlayerFrames[client].SetArray(idx, aFrame, sizeof(FrameInfo));
 }
@@ -1679,6 +1819,7 @@ stock int GetWeapon(int client, const char[] sClassname)
 	char sBuffer[128];
 	int iMaxWeapons = GetEntPropArraySize(client, Prop_Send, "m_hMyWeapons");
 
+#if DEBUG
 	ArrayList arr = new ArrayList(ByteCountToCells(128));
 	for (int i = 0; i < iMaxWeapons; i++)
 	{
@@ -1711,6 +1852,26 @@ stock int GetWeapon(int client, const char[] sClassname)
 	}
 
 	delete arr;
+#else
+	for (int i = 0; i < iMaxWeapons; i++)
+	{
+		int iWeapon = GetEntPropEnt(client, Prop_Send, "m_hMyWeapons", i);
+
+		if (!IsValidEntity(iWeapon))
+		{
+			continue;
+		}
+
+		GetEntityClassname(iWeapon, sBuffer, sizeof(sBuffer));
+
+		if (StrEqual(sBuffer, sClassname, false) ||
+			(StrEqual("weapon_hkp2000", sBuffer, false) && StrEqual("weapon_usp_silencer", sClassname, false)) ||
+			(StrEqual("weapon_m4a1", sBuffer, false) && StrEqual("weapon_m4a1_silencer", sClassname, false)))
+		{
+			return iWeapon;
+		}
+	}
+#endif
 
 	return -1;
 }
@@ -1777,4 +1938,11 @@ public bool TraceFilterIgnorePlayers(int entity, int contentsMask, int client)
 	}
 
 	return true;
+}
+
+stock bool IsRoundEnded()
+{
+	static int WINNER_NONE = 0;
+
+	return GameRules_GetProp("m_iRoundWinStatus") != WINNER_NONE;
 }
